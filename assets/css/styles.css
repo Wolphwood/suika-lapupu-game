@@ -19,8 +19,6 @@
 }
 
 body {
-  background-color: var(--col-bg);
-  font-family: 'Azeret Mono', sans-serif;
   overflow: hidden;
 }
 
