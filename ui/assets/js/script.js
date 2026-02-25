@@ -143,7 +143,7 @@ const Game = {
 		Runner.run(runner, engine);
 
 		for (let i = 0; i < 17; i++) {
-			Game.sounds['pop'+i].volume = 0.5;
+			Game.sounds['pop'+i].volume = 0.2;
 		}
 
 		Composite.add(engine.world, menuStatics);
