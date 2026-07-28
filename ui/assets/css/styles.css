@@ -50,7 +50,8 @@ body {
   border-bottom: 2px dotted #333;
   font-size: 4em;
   font-weight: 900;
-  padding-left: 16px;
+  padding-left: .25em;
+  padding-top: .25em;
   color: var(--col-bg-lighter);
   text-shadow: 3px 3px 0 var(--col-primary), -3px -3px 0 var(--col-primary), -3px 3px 0 var(--col-primary), 3px -3px 0 var(--col-primary);
 }
@@ -133,4 +134,30 @@ body {
 #game-next-fruit {
   width: 24px;
   height: 24px;
+}
+
+#big-game-next-fruit {
+  position: fixed;
+  top: 50%; left: 50%;
+  width: 90vw;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+
+  z-index: 99;
+
+  transition: opacity 500ms ease-in-out; 
+}
+#big-game-next-fruit p {
+  width: 100%;
+  text-align: center;
+  font-size: 3em;
+  font-weight: 900;
+  color: var(--col-bg-lighter);
+  text-shadow: 2px 2px 0 var(--col-primary), -2px -2px 0 var(--col-primary), -2px 2px 0 var(--col-primary), 2px -2px 0 var(--col-primary);
+}
+#big-game-next-fruit img {
+  width: 100%; height: auto;
+}
+#big-game-next-fruit.show {
+  opacity: 1;
 }

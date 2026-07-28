@@ -19,7 +19,7 @@ const {
 const wallPad = 64;
 const loseHeight = 84;
 const statusBarHeight = 64;
-const previewBallHeight = 48;
+const previewBallHeight = 96;
 const friction = {
 	friction: 0.006,
 	frictionStatic: 0.006,
@@ -34,9 +34,12 @@ const GameStates = {
 	LOSE: 3,
 };
 
+const BigPreviewElement = document.querySelector("#big-game-next-fruit")
+
 const Game = {
 	width: window.innerWidth,
 	height: window.innerHeight,
+	sparks: [],
 	elements: {
 		canvas: document.getElementById('game-canvas'),
 		ui: document.getElementById('game-ui'),
@@ -49,27 +52,46 @@ const Game = {
 	},
 	cache: { highscore: 0 },
 	sounds: {
-		click: new Audio('./assets/click.mp3'),
+		button: new Audio('./assets/snd/button.ogg'),
+		clear: new Audio('./assets/snd/clear.ogg'),
+
+		boom0: new Audio('./assets/snd/boom/boom0.ogg'),
+		boom1: new Audio('./assets/snd/boom/boom1.ogg'),
+		boom2: new Audio('./assets/snd/boom/boom2.ogg'),
+		boom3: new Audio('./assets/snd/boom/boom3.ogg'),
+		boom4: new Audio('./assets/snd/boom/boom4.ogg'),
+		boom5: new Audio('./assets/snd/boom/boom5.ogg'),
+		boom6: new Audio('./assets/snd/boom/boom6.ogg'),
+		boom7: new Audio('./assets/snd/boom/boom7.ogg'),
+		boom8: new Audio('./assets/snd/boom/boom8.ogg'),
 		
-		pop0: new Audio('./assets/snd/boom0.wav'),
-		pop1: new Audio('./assets/snd/boom1.wav'),
-		pop2: new Audio('./assets/snd/boom2.wav'),
-		pop3: new Audio('./assets/snd/boom3.wav'),
-		pop4: new Audio('./assets/snd/boom4.wav'),
-		pop5: new Audio('./assets/snd/boom5.wav'),
-		pop6: new Audio('./assets/snd/boom6.wav'),
-		pop7: new Audio('./assets/snd/boom7.wav'),
-		pop8: new Audio('./assets/snd/boom8.wav'),
-		pop9: new Audio('./assets/snd/boom9.wav'),
-		pop10: new Audio('./assets/snd/boom10.wav'),
-		pop11: new Audio('./assets/snd/boom11.wav'),
-		pop12: new Audio('./assets/snd/boom12.wav'),
-		pop13: new Audio('./assets/snd/boom13.wav'),
-		pop14: new Audio('./assets/snd/boom14.wav'),
-		pop15: new Audio('./assets/snd/boom15.wav'),
-		pop16: new Audio('./assets/snd/boom16.wav'),
-		pop17: new Audio('./assets/snd/boom17.wav'),
-		pop18: new Audio('./assets/snd/boom18.wav'),
+		lapupu0: new Audio('./assets/snd/lapupu/lapupu0.ogg'),
+		lapupu1: new Audio('./assets/snd/lapupu/lapupu1.ogg'),
+		lapupu2: new Audio('./assets/snd/lapupu/lapupu2.ogg'),
+		lapupu3: new Audio('./assets/snd/lapupu/lapupu3.ogg'),
+		lapupu4: new Audio('./assets/snd/lapupu/lapupu4.ogg'),
+		lapupu5: new Audio('./assets/snd/lapupu/lapupu5.ogg'),
+		lapupu6: new Audio('./assets/snd/lapupu/lapupu6.ogg'),
+		lapupu7: new Audio('./assets/snd/lapupu/lapupu7.ogg'),
+		lapupu8: new Audio('./assets/snd/lapupu/lapupu8.ogg'),
+		lapupu9: new Audio('./assets/snd/lapupu/lapupu9.ogg'),
+		lapupu10: new Audio('./assets/snd/lapupu/lapupu10.ogg'),
+		lapupu11: new Audio('./assets/snd/lapupu/lapupu11.ogg'),
+
+		fall1: new Audio('./assets/snd/fall/fall1.ogg'),
+		fall2: new Audio('./assets/snd/fall/fall2.ogg'),
+		fall3: new Audio('./assets/snd/fall/fall3.ogg'),
+		fall4: new Audio('./assets/snd/fall/fall4.ogg'),
+	},
+	spawnSpark(x, y, color) {
+    Game.sparks.push({
+			x: x, y: y,
+			vx: (Math.random() - 0.5) * 3,
+			vy: (Math.random() - 0.5) * 3,
+			life: 1.0,
+      decay: 0.02 + Math.random() * 0.02, // Durée de vie entre 25 et 50 frames
+			color: color || '219, 87, 0',
+    });
 	},
 
 	stateIndex: GameStates.MENU,
@@ -142,8 +164,15 @@ const Game = {
 		Render.run(render);
 		Runner.run(runner, engine);
 
-		for (let i = 0; i < 17; i++) {
-			Game.sounds['pop'+i].volume = 0.2;
+
+		for (let [key,sound] of Object.entries(Game.sounds)) {
+			if (key.startsWith("boom")) {
+				sound.volume = 0.5;
+			} else
+			if (key.startsWith("lapupu")) {
+				sound.volume = 0.5;
+			} else
+			sound.volume = 0.1;
 		}
 
 		Composite.add(engine.world, menuStatics);
@@ -162,10 +191,60 @@ const Game = {
 		}
 
 		Events.on(mouseConstraint, 'mousedown', menuMouseDown);
+
+		Events.on(render, 'afterRender', () => {
+    const ctx = render.context;
+    const bodies = Composite.allBodies(engine.world);
+
+    bodies.forEach(body => {
+			if (body.sizeIndex !== undefined && !body.isStatic) {
+				const size = Game.fruitSizes[body.sizeIndex];
+				const r = size.radius;
+				
+				const angleOffset = 0.3;
+				const currentAngle = body.angle + angleOffset;
+				const offsetX = Math.sin(currentAngle) * r;
+				const offsetY = -Math.cos(currentAngle) * r;
+				const tipX = body.position.x + offsetX;
+				const tipY = body.position.y + offsetY;
+				if (Math.random() > 0.8) {
+					Game.spawnSpark(tipX, tipY, body.sparkColor);
+				}
+			}
+    });
+		
+    // RENDU DES ÉTINCELLES
+    ctx.save(); // Sécurité pour le canvas
+    for (const i in Game.sparks) {
+      const s = Game.sparks[i];   
+			
+			s.x += s.vx;
+			s.y += s.vy;
+			s.life -= s.decay;
+
+			if (s.life <= 0) {
+				Game.sparks.splice(i, 1);
+				continue;
+			}
+
+			ctx.beginPath();
+			const radius = 2.5 * s.life;
+			ctx.arc(s.x, s.y, radius, 0, Math.PI * 2);
+			
+			ctx.fillStyle = `rgba(${s.color}, ${s.life})`;
+			
+			ctx.shadowBlur = 6 * s.life;
+			ctx.shadowColor = `rgba(${s.color}, 0.8)`;
+			
+			ctx.fill();
+    }
+    ctx.restore(); 
+});
 	},
 
 	startGame: async function () {
-		Game.sounds.click.play();
+		Game.sounds[`lapupu${Math.floor(Math.random() * 11)}`].play();
+		Game.sounds.button.play();
 
 		Composite.remove(engine.world, menuStatics);
 		Composite.add(engine.world, gameStatics);
@@ -189,6 +268,12 @@ const Game = {
 			if (Game.stateIndex !== GameStates.READY) return;
 			if (Game.elements.previewBall === null) return;
 
+			if (document.body.clientHeight - e.mouse.position.y > 50) {
+				BigPreviewElement.classList.remove("show");
+			} else {
+				BigPreviewElement.classList.add("show");
+			}
+			
 			Game.elements.previewBall.position.x = e.mouse.position.x;
 		});
 
@@ -247,7 +332,9 @@ const Game = {
 
 
 
-				Game.sounds[`pop${bodyA.sizeIndex}`].play();
+				Game.sounds[`boom${Math.floor(Math.random() * 9)}`].play();
+				Game.sounds.clear.play();
+				
 				Composite.remove(engine.world, [bodyA, bodyB]);
 				Composite.add(engine.world, newFruit);
 				Game.addPop(midPosX, midPosY, bodyA.circleRadius);
@@ -271,9 +358,17 @@ const Game = {
 		});
 
 		Composite.add(engine.world, circle);
-		setTimeout(() => {
-			Composite.remove(engine.world, circle);
-		}, 100);
+		
+		const fade = () => {
+			circle.render.opacity = Math.max(0, circle.render.opacity - 0.035);
+    };
+
+    Events.on(engine, 'afterUpdate', fade);
+
+    setTimeout(() => {
+      Events.off(engine, 'afterUpdate', fade); // Très important : stopper l'écouteur
+      Composite.remove(engine.world, circle);
+    }, 500);
 	},
 
 	loseGame: function () {
@@ -324,7 +419,9 @@ const Game = {
 	addFruit: async function (x) {
 		if (Game.stateIndex !== GameStates.READY) return;
 
-		Game.sounds.click.play();
+		
+		Game.sounds[`lapupu${Math.floor(Math.random() * 4)}`].play();
+		Game.sounds.button.play();
 
 		Game.stateIndex = GameStates.DROP;
 		const latestFruit = await Game.generateFruitBody(x, previewBallHeight, Game.currentFruitSize);
